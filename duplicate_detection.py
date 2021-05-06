@@ -20,8 +20,11 @@ import argparse
 import logging
 import json
 import piexif
+import MySQLdb as mysql
 
 IMAGE_FORMAT= [ 'jpeg', 'jpg', 'png', 'bmp', 'svg']
+DB = 0
+
 def detection(dir):
     # files = glob(f"{dir}/*")
     # if len(files) < 1:
@@ -66,10 +69,16 @@ def get_metadata(images: list):
 
 
 def main(args):
+    global DB
     if not os.path.exists(args.dir):
         logging.error(f"Directory {args.dir} does not exists in current working directory. Exit.")
         exit(1)
     # assume initial dir is empty and wait for submission
+    try:
+        DB = mysql.connect(host="localhost", user="lsdm", passwd="A&zRvGuYrp84cett", db="images")
+    except mysql.OperationalError:
+        logging.error("Error connecting to the database. Exit.")
+        exit(1)
     done = {}
     while True:
         list_dirs = [name for name in os.listdir(args.dir) if os.path.isdir(os.path.join(args.dir, name))]
