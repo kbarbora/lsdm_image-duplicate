@@ -54,13 +54,15 @@ def write_output(dir, data):
     return
 
 def get_metadata(images: list):
-    fields = ['ImageWidth', 'ImageLength', 'Make', 'Model',
-              'DateTime']
+    # TAGS for metadata fields and its corresponding meaning
+    fields = {256: 'ImageWidth', 257: 'ImageLength', 271: 'Make', 272: 'Model',
+              306: 'DateTime'}
+    parsed = {}
     for i in images:
         meta = piexif.load(i)
-
-
-
+        for k, v in fields.items():
+           parsed[v] = meta['0th'][k]
+    return parsed
 
 
 def main(args):
