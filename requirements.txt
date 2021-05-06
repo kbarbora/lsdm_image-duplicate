@@ -4,3 +4,4 @@ argparse
 logging
 json
 imagededup
+mysql-connector-python

@@ -20,8 +20,8 @@ import argparse
 import logging
 import json
 import piexif
-import MySQLdb as mysql
-
+#import MySQLdb as mysql
+import mysql.connector as mysql
 IMAGE_FORMAT= [ 'jpeg', 'jpg', 'png', 'bmp', 'svg']
 DB = 0
 
@@ -75,7 +75,7 @@ def main(args):
         exit(1)
     # assume initial dir is empty and wait for submission
     try:
-        DB = mysql.connect(host="localhost", user="lsdm", passwd="A&zRvGuYrp84cett", db="images")
+        DB = mysql.connect(host="localhost", user="lsdm", password="A&zRvGuYrp84cett", db="images")
     except mysql.OperationalError:
         logging.error("Error connecting to the database. Exit.")
         exit(1)
