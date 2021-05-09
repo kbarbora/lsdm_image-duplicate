@@ -23,7 +23,7 @@ import piexif
 #import MySQLdb as mysql
 import mysql.connector as mysql
 IMAGE_FORMAT= [ 'jpeg', 'jpg', 'png', 'bmp', 'svg']
-DB = 0
+DB = None
 
 def detection(dir):
     # files = glob(f"{dir}/*")
@@ -66,6 +66,21 @@ def get_metadata(images: list):
         for k, v in fields.items():
            parsed[v] = meta['0th'][k]
     return parsed
+
+
+def insert_image(data: dict):
+    global DB
+    cursor = DB.cursor()
+    table = "user_images"
+    query = """INSERT INTO user_images (user_id, ref, width, length, make, model, image_time) """\
+            """VALUES (%s, %s, %s, %s, %s, %s)"""
+    query_params = (data['user_id'], data['ref'], data['width'], data['length'], data['make'], data['model'], data['image_time'])
+    cursor.execute(query, query_params)
+    # query = f"INSERT INTO {table} (user_id, width, length, make, model, image_time) " \
+    #         f"VALUES ({data['user_id']}, {data['width']}, {data['length']}, " \
+    #         f"{data['make']}, {data['model']}, {data['image_time']})"
+    cursor.execute(query)
+
 
 
 def main(args):
