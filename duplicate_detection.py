@@ -1,14 +1,14 @@
 #!/usr/bin/python3
-#title			:duplicate_detection.py
-#description	:Image detection model for LSDM Group project
-#author			:Kevin Barba
-#team           :Oscar, Nicole, Kevin
-#date			:20210501
-#version		:0.1
-#usage			:python duplicate_detection.py
-#notes			:
-#python_version	:3.7
-#==============================================================================
+# title			:duplicate_detection.py
+# description	:Image detection model for LSDM Group project
+# author			:Kevin Barba
+# team           :Oscar, Nicole, Kevin
+# date			:20210501
+# version		:0.1
+# usage			:python duplicate_detection.py
+# notes			:
+# python_version	:3.7
+# ==============================================================================
 import sys
 import time
 from imagededup.methods import PHash
@@ -20,10 +20,12 @@ import argparse
 import logging
 import json
 import piexif
-#import MySQLdb as mysql
+# import MySQLdb as mysql
 import mysql.connector as mysql
-IMAGE_FORMAT= [ 'jpeg', 'jpg', 'png', 'bmp', 'svg']
+
+IMAGE_FORMAT = ['jpeg', 'jpg', 'png', 'bmp', 'svg']
 DB = None
+
 
 def detection(dir):
     # files = glob(f"{dir}/*")
@@ -32,7 +34,8 @@ def detection(dir):
     #     exit(1)
     phasher = PHash()
     encodings = phasher.encode_images(image_dir=dir)
-    return phasher.find_duplicates(encoding_map=encodings)
+    return phasher.find_duplicates(encoding_map=encodings, scores=True)
+
 
 def write_output(dir, data):
     out_dir = os.path.join("output", dir)
@@ -56,6 +59,7 @@ def write_output(dir, data):
         logging.info(f"Zip created with {len(data['paths'])} images")
     return
 
+
 def get_metadata(images: list):
     # TAGS for metadata fields and its corresponding meaning
     fields = {256: 'ImageWidth', 257: 'ImageLength', 271: 'Make', 272: 'Model',
@@ -64,23 +68,41 @@ def get_metadata(images: list):
     for i in images:
         meta = piexif.load(i)
         for k, v in fields.items():
-           parsed[v] = meta['0th'][k]
+            parsed[v] = meta['0th'][k]
     return parsed
 
 
-def insert_image(data: dict):
+def _insert_dupimage(data: dict):
     global DB
     cursor = DB.cursor()
-    table = "user_images"
-    query = """INSERT INTO user_images (user_id, ref, width, length, make, model, image_time) """\
-            """VALUES (%s, %s, %s, %s, %s, %s)"""
-    query_params = (data['user_id'], data['ref'], data['width'], data['length'], data['make'], data['model'], data['image_time'])
-    cursor.execute(query, query_params)
-    # query = f"INSERT INTO {table} (user_id, width, length, make, model, image_time) " \
-    #         f"VALUES ({data['user_id']}, {data['width']}, {data['length']}, " \
-    #         f"{data['make']}, {data['model']}, {data['image_time']})"
-    cursor.execute(query)
+    table = "duplicate_images"
+    query = f"INSERT INTO user_images (image_id, ref, similarity) " \
+            f"VALUES ({data['image_id']}, {data['ref_image_id']}, '{data['similarity']}')"
+    output = _execute_query(cursor, query)
+    return output
 
+
+def _query_image(table: str, user_id: str, reference: str):
+    global DB
+    cursor = DB.cursor(buffered=True)
+    # table = "duplicate_images"
+    query = f"SELECT * FROM {table} WHERE user_id={user_id} AND image_id={reference}"
+    output = _execute_query(cursor, query)
+    return output
+
+
+def _execute_query(cursor, query):
+    global DB
+    cursor.execute(query)
+    DB.commit()
+    output = cursor.fetchall()
+    if not output:
+        logging.error(f"Query: {query} return NONE. Continue.")
+        return False
+    if len(output) > 1:
+        logging.warning(f"Query {query} return MORE THAN ONE. Continue.")
+        return output
+    return output[0]
 
 
 def main(args):
@@ -107,7 +129,8 @@ def main(args):
         done[to_process] = {k: v for k, v in duplicated.items() if len(v) > 0}
 
         # if args.outputimage:
-            # plot_duplicates(image_dir='output', duplicate_map=done[to_process], filename='duplicate')
+        # plot_duplicates(image_dir='output', duplicate_map=done[to_process], filename='duplicate')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="duplicate_detection")
@@ -115,7 +138,7 @@ if __name__ == '__main__':
                         help="The directory where the images are located")
     parser.add_argument('--original', metavar='ORIGINAL', required=True,
                         help="Original image to search for duplicates")
-    parser.add_argument('--debug',action='store_true', help="Original image to search for duplicates")
+    parser.add_argument('--debug', action='store_true', help="Original image to search for duplicates")
     parser.add_argument('--recursive', '-r', action='store_true',
                         help="Do a recursive search, traversing through all directories inside.")
     parser.add_argument('--delete', action='store_true', help="Delete all the duplicate found without asking the user.")
