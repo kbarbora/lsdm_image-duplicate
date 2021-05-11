@@ -33,15 +33,17 @@ def detection(dir):
     duplicates = phasher.find_duplicates(encoding_map=encodings, scores=True)
     only_dup = {k: v for k, v in duplicates.items() if len(v) > 0}
     data = {}
+    done = []
     for k, v in only_dup.items():
         if len(v) > 0:
             curr = only_dup[k]
             for d in curr:
                 dup_name = d[0]
                 metric = d[1]
-                data = {'image_id': k, 'ref_image_id': dup_name, 'similarity': metric}
+                data = {'user_id': dir[dir.index('/')+1:], 'image_id': k, 'ref_image_id': dup_name, 'similarity': metric}
+                done.append(data)
                 _insert_dupimages(data)
-    return data
+    return done
 
 
 def write_output(dir, data):
@@ -83,8 +85,8 @@ def _insert_dupimages(data: dict):
     global DB
     cursor = DB.cursor()
     table = "duplicate_images"
-    query = f"INSERT INTO {table} (image_id, ref_image_id, similarity) " \
-            f"VALUES ({data['image_id']}, {data['ref_image_id']}, {data['similarity']})"
+    query = f"INSERT INTO {table} (user_id, image_id, ref_image_id, similarity) " \
+            f"VALUES ({data['user_id']}, {data['image_id']}, {data['ref_image_id']}, {data['similarity']})"
     output = _execute_query(cursor, query)
     return output
 
@@ -99,18 +101,20 @@ def _query_image(table: str, id: str):
     return output
 
 
-def _execute_query(cursor, query):
+def _execute_query(cursor, query, error_checking=False):
     global DB
     cursor.execute(query)
     DB.commit()
     output = cursor.fetchone()
-    if not output:
-        logging.error(f"Query: {query} return NONE. Continue.")
-        return False
-    if len(output) > 1:
-        logging.warning(f"Query {query} return MORE THAN ONE. Continue.")
-        return output
-    return output[0]
+    if error_checking:
+        if not output:
+            logging.error(f"Query: {query} return NONE. Continue.")
+            return False
+        if len(output) > 1:
+            logging.warning(f"Query {query} return MORE THAN ONE. Continue.")
+            return output
+        return output[0]
+    return
 
 
 def main(args):
@@ -124,17 +128,19 @@ def main(args):
     except mysql.OperationalError:
         logging.error("Error connecting to the database. Exit.")
         exit(1)
-    done = {}
+    done = []
     while True:
         list_dirs = [name for name in os.listdir(args.dir) if os.path.isdir(os.path.join(args.dir, name))]
-        diff = list(set(list_dirs) - set(done.keys()))
+        diff = list(set(list_dirs) - set(done))
         if len(diff) == 0:
             logging.warning("wait")
             time.sleep(5)
             continue
         to_process = list_dirs.pop()
         duplicated = detection(os.path.join(args.dir, to_process))
-        done[to_process] = {k: v for k, v in duplicated.items() if len(v) > 0}
+        done.append(to_process)
+        print(done)
+        # done[to_process] = {k: v for k, v in duplicated.items() if len(v) > 0}
 
         # if args.outputimage:
         # plot_duplicates(image_dir='output', duplicate_map=done[to_process], filename='duplicate')
