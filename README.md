@@ -5,13 +5,13 @@ Back end python scripts for the image duplicate detection project.
 It uses [Image Deduplicator](https://idealo.github.io/imagededup/) framework to detect images. Since the Hashing mechanism performs really good
 and because limited computational resources (GPU) is the only algorithm implemented.
 
-##Install and Requirements
+## Install and Requirements
 
 Python 3.7 and newer
 
 All the dependencies needed are in "requirements.txt"
 
-##Command Line Arguments and Usage
+## Command Line Arguments and Usage
 ```
 python3 duplicate_detection [-h] --dir DIR [--debug] [--recursive] [--delete]
                            [--log] [--outputimage]
@@ -28,7 +28,7 @@ optional arguments:
   --outputimage, -oi  Produce an output image showing the possible duplicates
 ```
 
-###Author and Acknowledgement
+## Author and Acknowledgement
 Group Members: Oscar Falcon, Nicole Jenkins, Kevin Barba
 
 Author: Kevin Barba
@@ -41,5 +41,5 @@ Spring 2021
 
 University of Texas at San Antonio
 
-###License
+## License
 [MIT](https://choosealicense.com/licenses/mit/)
