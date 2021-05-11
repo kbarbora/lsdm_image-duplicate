@@ -132,8 +132,9 @@ def main(args):
     except mysql.OperationalError:
         logging.error("Error connecting to the database. Exit.")
         exit(1)
-    done = []
+    done = ['1', '10', '2', '4', '5', '6', '8']
     queue_dirs = [name for name in os.listdir(args.dir) if os.path.isdir(os.path.join(args.dir, name))]
+    queue_dirs = list(set(queue_dirs)-set(done))
     existing = True
     while True:
         if existing:
