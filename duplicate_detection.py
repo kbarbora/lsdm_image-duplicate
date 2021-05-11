@@ -41,8 +41,12 @@ def detection(dir):
                 dup_name = d[0]
                 metric = d[1]
                 data = {'user_id': dir[dir.index('/')+1:], 'image_id': k, 'ref_image_id': dup_name, 'similarity': metric}
-                done.append(data)
-                _insert_dupimages(data)
+                signature = str(dup_name)+str(k)+str(metric)
+                if signature not in done:
+                    _insert_dupimages(data)
+                    done.append(str(k)+str(dup_name)+str(metric)) # reverse order!
+                else:
+                    logging.info("Found same signature for record. Skipped.")
     return done
 
 
