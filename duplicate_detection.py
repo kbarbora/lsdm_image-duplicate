@@ -149,8 +149,8 @@ def main(args):
             logging.warning("wait")
             time.sleep(5)
             continue
-        to_process = list_dirs.pop()
-        duplicated = detection(os.path.join(args.dir, to_process))
+        to_process = diff.pop()
+        detection(os.path.join(args.dir, to_process))
         done.append(to_process)
         # done[to_process] = {k: v for k, v in duplicated.items() if len(v) > 0}
 
