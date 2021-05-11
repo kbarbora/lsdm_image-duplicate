@@ -47,7 +47,7 @@ def detection(dir):
                     done.append(str(k)+str(dup_name)+str(metric)) # reverse order!
                 else:
                     logging.info("Found same signature for record. Skipped.")
-    return done
+    return
 
 
 def write_output(dir, data):
@@ -133,7 +133,16 @@ def main(args):
         logging.error("Error connecting to the database. Exit.")
         exit(1)
     done = []
+    queue_dirs = [name for name in os.listdir(args.dir) if os.path.isdir(os.path.join(args.dir, name))]
+    existing = True
     while True:
+        if existing:
+            logging.info("Processing existing directories.")
+            for queue in queue_dirs:
+                detection(os.path.join(args.dir, queue))
+                done.append(queue)
+                logging.info(f"Directory {done} was processed.")
+            existing = False
         list_dirs = [name for name in os.listdir(args.dir) if os.path.isdir(os.path.join(args.dir, name))]
         diff = list(set(list_dirs) - set(done))
         if len(diff) == 0:
@@ -143,7 +152,6 @@ def main(args):
         to_process = list_dirs.pop()
         duplicated = detection(os.path.join(args.dir, to_process))
         done.append(to_process)
-        print(done)
         # done[to_process] = {k: v for k, v in duplicated.items() if len(v) > 0}
 
         # if args.outputimage:
@@ -156,7 +164,7 @@ if __name__ == '__main__':
                         help="The directory where the images are located")
     # parser.add_argument('--original', metavar='ORIGINAL', required=True,
     #                     help="Original image to search for duplicates")
-    parser.add_argument('--debug', action='store_true', help="Original image to search for duplicates")
+    parser.add_argument('--debug', action='store_true', help="Debug mode")
     parser.add_argument('--recursive', '-r', action='store_true',
                         help="Do a recursive search, traversing through all directories inside.")
     parser.add_argument('--delete', action='store_true', help="Delete all the duplicate found without asking the user.")
@@ -167,7 +175,10 @@ if __name__ == '__main__':
     parsed = parser.parse_args()
     if parsed.log:
         logging.basicConfig(filename="image_detection.log", filemode='a+', level=logging.WARNING)
+        main(parsed)
     else:
-        logging.basicConfig(level=logging.WARNING)
-    if parsed.debug:
+        if parsed.debug:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            logging.basicConfig(level=logging.WARNING)
         main(parsed)
