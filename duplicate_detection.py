@@ -28,13 +28,20 @@ DB = None
 
 
 def detection(dir):
-    # files = glob(f"{dir}/*")
-    # if len(files) < 1:
-    #     logging.error(f"There are no files in the directory. Exit.")
-    #     exit(1)
     phasher = PHash()
     encodings = phasher.encode_images(image_dir=dir)
-    return phasher.find_duplicates(encoding_map=encodings, scores=True)
+    duplicates = phasher.find_duplicates(encoding_map=encodings, scores=True)
+    only_dup = {k: v for k, v in duplicates.items() if len(v) > 0}
+    data = {}
+    for k, v in only_dup.items():
+        if len(v) > 0:
+            curr = only_dup[k]
+            for d in curr:
+                dup_name = d[0]
+                metric = d[1]
+                data = {'image_id': k, 'ref_image_id': dup_name, 'similarity': metric}
+                _insert_dupimages(data)
+    return data
 
 
 def write_output(dir, data):
@@ -72,22 +79,23 @@ def get_metadata(images: list):
     return parsed
 
 
-def _insert_dupimage(data: dict):
+def _insert_dupimages(data: dict):
     global DB
     cursor = DB.cursor()
     table = "duplicate_images"
-    query = f"INSERT INTO user_images (image_id, ref, similarity) " \
-            f"VALUES ({data['image_id']}, {data['ref_image_id']}, '{data['similarity']}')"
+    query = f"INSERT INTO {table} (image_id, ref_image_id, similarity) " \
+            f"VALUES ({data['image_id']}, {data['ref_image_id']}, {data['similarity']})"
     output = _execute_query(cursor, query)
     return output
 
 
-def _query_image(table: str, user_id: str, reference: str):
+def _query_image(table: str, id: str):
     global DB
     cursor = DB.cursor(buffered=True)
     # table = "duplicate_images"
-    query = f"SELECT * FROM {table} WHERE user_id={user_id} AND image_id={reference}"
+    query = f"SELECT * FROM {table} WHERE id={id}"
     output = _execute_query(cursor, query)
+    cursor.close()
     return output
 
 
@@ -95,7 +103,7 @@ def _execute_query(cursor, query):
     global DB
     cursor.execute(query)
     DB.commit()
-    output = cursor.fetchall()
+    output = cursor.fetchone()
     if not output:
         logging.error(f"Query: {query} return NONE. Continue.")
         return False
@@ -136,8 +144,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="duplicate_detection")
     parser.add_argument('--dir', metavar='DIR', required=True,
                         help="The directory where the images are located")
-    parser.add_argument('--original', metavar='ORIGINAL', required=True,
-                        help="Original image to search for duplicates")
+    # parser.add_argument('--original', metavar='ORIGINAL', required=True,
+    #                     help="Original image to search for duplicates")
     parser.add_argument('--debug', action='store_true', help="Original image to search for duplicates")
     parser.add_argument('--recursive', '-r', action='store_true',
                         help="Do a recursive search, traversing through all directories inside.")
